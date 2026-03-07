@@ -1,0 +1,2 @@
+ALTER TABLE "mustahiq" ADD COLUMN "input_by" uuid;--> statement-breakpoint
+ALTER TABLE "mustahiq" ADD CONSTRAINT "mustahiq_input_by_users_id_fk" FOREIGN KEY ("input_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
