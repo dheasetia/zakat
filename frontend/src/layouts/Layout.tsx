@@ -27,7 +27,7 @@ export const Layout = () => {
     return (
         <div className="min-h-screen text-gray-300 flex flex-col md:flex-row">
             {/* Sidebar / Topbar */}
-            <nav className="glass-card flex-shrink-0 md:w-64 md:h-screen sticky top-0 md:m-4 flex flex-col z-50 rounded-none md:rounded-2xl border-x-0 md:border-x border-y-0 md:border-y border-white/10">
+            <nav className="glass-card !overflow-visible flex-shrink-0 md:w-64 md:h-screen sticky top-0 md:m-4 flex flex-col z-50 rounded-none md:rounded-2xl border-x-0 md:border-x border-y-0 md:border-y border-white/10">
                 <div className="p-4 border-b border-white/5 flex justify-between items-center md:block">
                     <div>
                         <h1 className="text-2xl font-black text-slate-100 tracking-tight">Zakat<span className="font-light text-slate-400">App</span></h1>
