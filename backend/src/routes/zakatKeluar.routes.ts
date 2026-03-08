@@ -70,4 +70,22 @@ router.post('/', authenticateToken, requireRole(['ADMIN', 'PEMBAGI']), upload.si
     }
 });
 
+// Delete Zakat Keluar (Admin Only)
+router.delete('/:id', authenticateToken, requireRole(['ADMIN']), async (req: AuthRequest, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const deletedRecord = await db.delete(zakatKeluar).where(eq(zakatKeluar.id, id)).returning();
+
+        if (deletedRecord.length === 0) {
+            res.status(404).json({ message: 'Data tidak ditemukan.' });
+            return;
+        }
+
+        res.json({ message: 'Data berhasil dihapus.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Gagal menghapus data Penyaluran Zakat.' });
+    }
+});
+
 export default router;

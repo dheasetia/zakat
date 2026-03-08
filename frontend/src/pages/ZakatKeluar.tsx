@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 export const ZakatKeluarList = () => {
+    const { user } = useAuth();
     const [transaksi, setTransaksi] = useState<any[]>([]);
     const [mustahiqOptions, setMustahiqOptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -74,6 +76,19 @@ export const ZakatKeluarList = () => {
         }
     };
 
+    const handleDelete = async (id: number) => {
+        if (window.confirm('Yakin ingin menghapus transaksi penyaluran zakat ini?')) {
+            try {
+                await api.delete(`/zakat-keluar/${id}`);
+                alert('Transaksi berhasil dihapus');
+                fetchData();
+            } catch (error: any) {
+                console.error("Error deleting transaksi", error);
+                alert(error.response?.data?.message || 'Gagal menghapus transaksi');
+            }
+        }
+    };
+
     if (loading) return <div>Memuat...</div>;
 
     const formatCurrency = (amount: number) => {
@@ -110,6 +125,7 @@ export const ZakatKeluarList = () => {
                                 <th className="glass-table-th">Metode</th>
                                 <th className="glass-table-th">Petugas</th>
                                 <th className="glass-table-th text-center">Bukti Transfer</th>
+                                {user?.role === 'ADMIN' && <th className="glass-table-th text-right">Aksi</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -154,6 +170,17 @@ export const ZakatKeluarList = () => {
                                                 <span className="text-gray-500 italic text-xs">Tidak ada</span>
                                             )}
                                         </td>
+                                        {user?.role === 'ADMIN' && (
+                                            <td className="glass-table-td text-right text-sm">
+                                                <button
+                                                    onClick={() => handleDelete(t.id)}
+                                                    className="text-red-400 hover:text-red-300 transition-colors"
+                                                    title="Hapus Transaksi"
+                                                >
+                                                    <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })}
