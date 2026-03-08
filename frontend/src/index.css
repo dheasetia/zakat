@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 @layer base {
+    html {
+        @apply overscroll-none overflow-hidden h-full;
+        -webkit-tap-highlight-color: transparent;
+    }
     body {
-        @apply bg-slate-950 text-slate-300 antialiased min-h-screen;
+        @apply bg-slate-950 text-slate-300 antialiased h-[100dvh] w-full overflow-hidden select-none touch-manipulation;
+    }
+    input, textarea {
+        @apply select-auto;
     }
 }
 
