@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -5,6 +6,11 @@ export const Layout = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    useEffect(() => {
+        setIsMobileMenuOpen(false);
+    }, [location.pathname]);
 
     const handleLogout = () => {
         logout();
@@ -22,12 +28,26 @@ export const Layout = () => {
         <div className="min-h-screen text-gray-300 flex flex-col md:flex-row">
             {/* Sidebar / Topbar */}
             <nav className="glass-card flex-shrink-0 md:w-64 md:h-screen sticky top-0 md:m-4 flex flex-col z-50 rounded-none md:rounded-2xl border-x-0 md:border-x border-y-0 md:border-y border-white/10">
-                <div className="p-6 border-b border-white/5 flex justify-between items-center md:block">
+                <div className="p-4 border-b border-white/5 flex justify-between items-center md:block">
                     <div>
                         <h1 className="text-2xl font-black text-slate-100 tracking-tight">Zakat<span className="font-light text-slate-400">App</span></h1>
                     </div>
+
+                    <button
+                        className="md:hidden text-gray-300 hover:text-white p-2 focus:outline-none"
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {isMobileMenuOpen ? (
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            ) : (
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            )}
+                        </svg>
+                    </button>
+
                     {user && (
-                        <div className="md:mt-6 text-sm">
+                        <div className="hidden md:block md:mt-6 text-sm">
                             <p className="text-slate-400">Halo,</p>
                             <p className="font-semibold text-white truncate">{user.name}</p>
                             <div className="inline-block mt-2 px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-medium tracking-wider text-slate-300 uppercase">
@@ -37,9 +57,17 @@ export const Layout = () => {
                     )}
                 </div>
 
-                <div className="p-4 flex-1 flex md:flex-col overflow-x-auto md:overflow-y-auto custom-scrollbar">
+                <div className={`${isMobileMenuOpen ? 'flex' : 'hidden'} md:flex p-4 flex-1 flex-col overflow-y-auto custom-scrollbar absolute md:static top-full left-0 w-full md:w-auto bg-slate-950 md:bg-transparent border-b border-white/10 md:border-none shadow-2xl md:shadow-none`}>
                     {user ? (
-                        <div className="flex md:flex-col gap-1 w-full relative h-full">
+                        <div className="flex flex-col gap-1 w-full relative h-full">
+                            <div className="md:hidden mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                                <p className="text-slate-400 text-xs">Login sebagai:</p>
+                                <p className="font-semibold text-white truncate">{user.name}</p>
+                                <div className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-medium tracking-wider text-slate-300 uppercase">
+                                    {user.role}
+                                </div>
+                            </div>
+
                             <Link to="/dashboard" className={navLinkClass('/dashboard')}>
                                 <svg className="w-5 h-5 mr-3 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                                 Dasbor
