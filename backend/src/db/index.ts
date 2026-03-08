@@ -7,9 +7,9 @@ dotenv.config();
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL!,
-    ssl: {
-        rejectUnauthorized: true, // or false depending on neon config if it fails
-    }
+    ssl: process.env.NODE_ENV === "production" ? {
+        rejectUnauthorized: false, // or false depending on neon config if it fails
+    } : false,
 });
 
 export const db = drizzle(pool, { schema });
