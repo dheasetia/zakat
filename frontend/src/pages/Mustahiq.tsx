@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -9,7 +9,7 @@ export const MustahiqList = () => {
     const [mustahiq, setMustahiq] = useState<any[]>([]);
     const [zones, setZones] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
+    const nameInputRef = useRef<HTMLInputElement>(null);
     const [submitting, setSubmitting] = useState(false);
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -72,12 +72,12 @@ export const MustahiqList = () => {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
             }
-            setShowModal(false);
             setEditingId(null);
             setFormData({ name: '', nik: '', phone: '', address: '', asnafCategory: 'Fakir', gender: 'Laki-laki', age: '', priorityLevel: '1', zoneId: '' });
             setIdCardImage(null);
             setProfileImage(null);
             fetchMustahiqAndZones();
+            setTimeout(() => nameInputRef.current?.focus(), 50);
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || 'Gagal menyimpan data Mustahiq';
             alert(errorMsg);
@@ -99,7 +99,10 @@ export const MustahiqList = () => {
         });
         setIdCardImage(null);
         setProfileImage(null);
-        setShowModal(true);
+        setTimeout(() => {
+            nameInputRef.current?.focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 50);
     };
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -118,6 +121,147 @@ export const MustahiqList = () => {
 
     return (
         <>
+            {(user?.role === 'ADMIN' || user?.role === 'PEMBAGI') && (
+                <div className="glass-card p-6 mb-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-slate-700/20 blur-2xl rounded-full"></div>
+                    <h3 className="text-xl font-bold mb-6 text-white relative z-10">{editingId ? 'Edit Data Mustahiq' : 'Tambah Mustahiq Baru'}</h3>
+                    <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
+                        <div>
+                            <label className="glass-label">Nama Lengkap</label>
+                            <input
+                                type="text" required autoFocus
+                                ref={nameInputRef}
+                                className="glass-input"
+                                value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="glass-label">Zona Penyaluran (Opsional)</label>
+                            <select
+                                className="glass-input"
+                                value={formData.zoneId} onChange={e => setFormData({ ...formData, zoneId: e.target.value })}
+                            >
+                                <option value="" className="bg-slate-900">-- Pilih Zona --</option>
+                                {zones.map((zone) => (
+                                    <option key={zone.id} value={zone.id} className="bg-slate-900">{zone.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="glass-label">NIK / Identitas</label>
+                                <input
+                                    type="text" required
+                                    className="glass-input"
+                                    value={formData.nik} onChange={e => setFormData({ ...formData, nik: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="glass-label">Nomor HP (Opsional)</label>
+                                <input
+                                    type="tel"
+                                    className="glass-input"
+                                    value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="glass-label">Kategori Asnaf</label>
+                                <select
+                                    className="glass-input"
+                                    value={formData.asnafCategory} onChange={e => setFormData({ ...formData, asnafCategory: e.target.value })}
+                                >
+                                    {asnafOptions.map(opt => <option key={opt} value={opt} className="bg-slate-900">{opt}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="glass-label">Tingkat Prioritas</label>
+                                <select
+                                    className="glass-input"
+                                    value={formData.priorityLevel} onChange={e => setFormData({ ...formData, priorityLevel: e.target.value })}
+                                >
+                                    <option value="1" className="bg-slate-900">1 - Paling Rendah (Biasa)</option>
+                                    <option value="2" className="bg-slate-900">2 - Rendah</option>
+                                    <option value="3" className="bg-slate-900">3 - Menengah (Sedang)</option>
+                                    <option value="4" className="bg-slate-900">4 - Tinggi</option>
+                                    <option value="5" className="bg-slate-900">5 - Paling Tinggi (Sangat Darurat)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="glass-label">Jenis Kelamin</label>
+                                <select
+                                    className="glass-input"
+                                    value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })}
+                                >
+                                    <option value="Laki-laki" className="bg-slate-900">Laki-laki</option>
+                                    <option value="Perempuan" className="bg-slate-900">Perempuan</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="glass-label">Umur (Opsional)</label>
+                                <input
+                                    type="number" min="0" max="150"
+                                    className="glass-input"
+                                    value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="glass-label">Foto KTP (Opsional)</label>
+                                <input
+                                    type="file" accept="image/*"
+                                    className="mt-1 block w-full text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-white/10 file:text-slate-300 hover:file:bg-white/20"
+                                    onChange={e => setIdCardImage(e.target.files ? e.target.files[0] : null)}
+                                />
+                            </div>
+                            <div>
+                                <label className="glass-label">Foto Wajah (Opsional)</label>
+                                <input
+                                    type="file" accept="image/*"
+                                    className="mt-1 block w-full text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-white/10 file:text-slate-300 hover:file:bg-white/20"
+                                    onChange={e => setProfileImage(e.target.files ? e.target.files[0] : null)}
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="glass-label">Alamat Lengkap</label>
+                            <textarea
+                                rows={2}
+                                className="glass-input"
+                                value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })}
+                            />
+                        </div>
+                        <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-white/10">
+                            {editingId && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditingId(null);
+                                        setFormData({ name: '', nik: '', phone: '', address: '', asnafCategory: 'Fakir', gender: 'Laki-laki', age: '', priorityLevel: '1', zoneId: '' });
+                                        setIdCardImage(null);
+                                        setProfileImage(null);
+                                        setTimeout(() => nameInputRef.current?.focus(), 50);
+                                    }}
+                                    className="btn-secondary"
+                                >
+                                    Batal Edit
+                                </button>
+                            )}
+                            <button
+                                type="submit" disabled={submitting}
+                                className="btn-primary disabled:opacity-50"
+                            >
+                                {submitting ? 'Menyimpan...' : (editingId ? 'Simpan Perubahan' : 'Simpan Mustahiq (Enter)')}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
             <div className="glass-card p-6 relative mb-8">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
@@ -127,16 +271,14 @@ export const MustahiqList = () => {
                     {(user?.role === 'ADMIN' || user?.role === 'PEMBAGI') && (
                         <button
                             onClick={() => {
-                                setEditingId(null);
-                                setFormData({ name: '', nik: '', phone: '', address: '', asnafCategory: 'Fakir', gender: 'Laki-laki', age: '', priorityLevel: '1', zoneId: '' });
-                                setIdCardImage(null);
-                                setProfileImage(null);
-                                setShowModal(true);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                setTimeout(() => nameInputRef.current?.focus(), 50);
                             }}
-                            className="btn-primary w-full sm:w-auto"
+                            className="btn-primary w-full sm:w-auto flex items-center justify-center p-0 px-5"
+                            style={{ height: '42px' }}
                         >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
-                            Tambah Mustahiq
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                            Ke Form Input
                         </button>
                     )}
                 </div>
@@ -257,140 +399,7 @@ export const MustahiqList = () => {
                     </table>
                 </div>
             </div>
-            {
-                showModal && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full max-h-[calc(100vh-4rem)] overflow-y-auto shadow-2xl relative">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-slate-700/20 blur-2xl rounded-full"></div>
-                            <h3 className="text-xl font-bold mb-6 text-white relative z-10">{editingId ? 'Edit Data Mustahiq' : 'Tambah Mustahiq Baru'}</h3>
-                            <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
-                                <div>
-                                    <label className="glass-label">Nama Lengkap</label>
-                                    <input
-                                        type="text" required
-                                        className="glass-input"
-                                        value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="glass-label">Zona Penyaluran (Opsional)</label>
-                                    <select
-                                        className="glass-input"
-                                        value={formData.zoneId} onChange={e => setFormData({ ...formData, zoneId: e.target.value })}
-                                    >
-                                        <option value="" className="bg-slate-900">-- Pilih Zona --</option>
-                                        {zones.map((zone) => (
-                                            <option key={zone.id} value={zone.id} className="bg-slate-900">{zone.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="glass-label">NIK</label>
-                                        <input
-                                            type="text" required
-                                            className="glass-input"
-                                            value={formData.nik} onChange={e => setFormData({ ...formData, nik: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="glass-label">Nomor HP (Opsional)</label>
-                                        <input
-                                            type="tel"
-                                            className="glass-input"
-                                            value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="glass-label">Kategori Asnaf</label>
-                                        <select
-                                            className="glass-input"
-                                            value={formData.asnafCategory} onChange={e => setFormData({ ...formData, asnafCategory: e.target.value })}
-                                        >
-                                            {asnafOptions.map(opt => <option key={opt} value={opt} className="bg-slate-900">{opt}</option>)}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="glass-label">Tingkat Prioritas</label>
-                                        <select
-                                            className="glass-input"
-                                            value={formData.priorityLevel} onChange={e => setFormData({ ...formData, priorityLevel: e.target.value })}
-                                        >
-                                            <option value="1" className="bg-slate-900">1 - Paling Rendah (Biasa)</option>
-                                            <option value="2" className="bg-slate-900">2 - Rendah</option>
-                                            <option value="3" className="bg-slate-900">3 - Menengah (Sedang)</option>
-                                            <option value="4" className="bg-slate-900">4 - Tinggi</option>
-                                            <option value="5" className="bg-slate-900">5 - Paling Tinggi (Sangat Darurat)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="glass-label">Jenis Kelamin</label>
-                                        <select
-                                            className="glass-input"
-                                            value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })}
-                                        >
-                                            <option value="Laki-laki" className="bg-slate-900">Laki-laki</option>
-                                            <option value="Perempuan" className="bg-slate-900">Perempuan</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="glass-label">Umur (Opsional)</label>
-                                        <input
-                                            type="number" min="0" max="150"
-                                            className="glass-input"
-                                            value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="glass-label">Foto KTP (Opsional)</label>
-                                        <input
-                                            type="file" accept="image/*"
-                                            className="mt-1 block w-full text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-white/10 file:text-slate-300 hover:file:bg-white/20"
-                                            onChange={e => setIdCardImage(e.target.files ? e.target.files[0] : null)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="glass-label">Foto Wajah (Opsional)</label>
-                                        <input
-                                            type="file" accept="image/*"
-                                            className="mt-1 block w-full text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-white/10 file:text-slate-300 hover:file:bg-white/20"
-                                            onChange={e => setProfileImage(e.target.files ? e.target.files[0] : null)}
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="glass-label">Alamat (Opsional)</label>
-                                    <textarea
-                                        rows={3}
-                                        className="glass-input"
-                                        value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                    />
-                                </div>
-                                <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-white/10">
-                                    <button
-                                        type="button" onClick={() => setShowModal(false)}
-                                        className="btn-secondary"
-                                    >
-                                        Batal
-                                    </button>
-                                    <button
-                                        type="submit" disabled={submitting}
-                                        className="btn-primary disabled:opacity-50"
-                                    >
-                                        {submitting ? 'Menyimpan...' : 'Simpan'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )
-            }
+            {/* Modal removed as form is now inline */}
             {
                 previewImageUrl && (
                     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4" onClick={() => setPreviewImageUrl(null)}>
