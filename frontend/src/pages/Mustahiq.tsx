@@ -73,7 +73,17 @@ export const MustahiqList = () => {
                 });
             }
             setEditingId(null);
-            setFormData({ name: '', nik: '', phone: '', address: '', asnafCategory: 'Fakir', gender: 'Laki-laki', age: '', priorityLevel: '1', zoneId: '' });
+            setFormData(prev => ({
+                name: '',
+                nik: '',
+                phone: '',
+                address: prev.address,
+                asnafCategory: prev.asnafCategory,
+                gender: 'Laki-laki',
+                age: '',
+                priorityLevel: prev.priorityLevel,
+                zoneId: prev.zoneId
+            }));
             setIdCardImage(null);
             setProfileImage(null);
             fetchMustahiqAndZones();
