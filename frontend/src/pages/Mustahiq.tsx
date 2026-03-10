@@ -21,6 +21,12 @@ export const MustahiqList = () => {
     const [profileImage, setProfileImage] = useState<File | null>(null);
     const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterZone, setFilterZone] = useState('');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 20;
+
     const asnafOptions = ['Fakir', 'Miskin', 'Amil', 'Mualaf', 'Riqab', 'Gharim', 'Fisabilillah', 'Ibnu Sabil'];
 
     const fetchMustahiqAndZones = async () => {
@@ -130,6 +136,30 @@ export const MustahiqList = () => {
             }
         }
     };
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterZone, sortOrder]);
+
+    const filteredAndSortedMustahiq = mustahiq
+        .filter(m => {
+            const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesZone = filterZone ? m.zoneId === Number(filterZone) : true;
+            return matchesSearch && matchesZone;
+        })
+        .sort((a, b) => {
+            if (sortOrder === 'asc') {
+                return a.name.localeCompare(b.name);
+            } else {
+                return b.name.localeCompare(a.name);
+            }
+        });
+
+    const totalPages = Math.ceil(filteredAndSortedMustahiq.length / ITEMS_PER_PAGE);
+    const paginatedMustahiq = filteredAndSortedMustahiq.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
 
     if (loading) return <div>Memuat...</div>;
 
@@ -303,15 +333,42 @@ export const MustahiqList = () => {
                     )}
                 </div>
 
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                    <input
+                        type="text"
+                        placeholder="Cari nama mustahiq..."
+                        className="glass-input flex-1"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <select
+                        className="glass-input md:w-48"
+                        value={filterZone}
+                        onChange={(e) => setFilterZone(e.target.value)}
+                    >
+                        <option value="" className="bg-slate-900">Semua Zona</option>
+                        {zones.map(z => (
+                            <option key={z.id} value={z.id} className="bg-slate-900">{z.name}</option>
+                        ))}
+                    </select>
+                    <select
+                        className="glass-input md:w-48"
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                    >
+                        <option value="asc" className="bg-slate-900">Nama (A-Z)</option>
+                        <option value="desc" className="bg-slate-900">Nama (Z-A)</option>
+                    </select>
+                </div>
+
                 <div className="overflow-x-auto">
                     <table className="min-w-full">
                         <thead>
                             <tr>
                                 <th className="glass-table-th">Foto</th>
                                 <th className="glass-table-th">Nama</th>
-                                <th className="glass-table-th">Identitas</th>
                                 <th className="glass-table-th">Zona</th>
-                                <th className="glass-table-th">Kategori & Prioritas</th>
+                                <th className="glass-table-th">Kategori</th>
                                 <th className="glass-table-th">Petugas Pendata</th>
                                 <th className="glass-table-th">Penerimaan</th>
                                 <th className="glass-table-th">Status</th>
@@ -321,7 +378,7 @@ export const MustahiqList = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {mustahiq.map((m) => (
+                            {paginatedMustahiq.map((m) => (
                                 <tr
                                     key={m.id}
                                     onClick={() => navigate(`/mustahiq/${m.id}`)}
@@ -345,25 +402,10 @@ export const MustahiqList = () => {
                                         <div className="text-sm text-gray-400">{m.gender || '-'} {m.age ? `• ${m.age} Thn` : ''}</div>
                                     </td>
                                     <td className="glass-table-td">
-                                        <div className="text-sm text-gray-300">{m.nik}</div>
-                                        <div className="text-sm text-gray-400 mb-1">{m.phone}</div>
-                                        {m.idCardImageUrl && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setPreviewImageUrl(`http://localhost:3000${m.idCardImageUrl}`); }}
-                                                className="text-xs text-slate-400 hover:text-slate-300 transition-colors"
-                                            >
-                                                Lihat KTP
-                                            </button>
-                                        )}
-                                    </td>
-                                    <td className="glass-table-td">
                                         <div className="text-sm text-gray-300">{m.zoneName || '-'}</div>
                                     </td>
                                     <td className="glass-table-td">
                                         <div className="text-sm font-medium text-slate-300">{m.asnafCategory}</div>
-                                        <div className="text-sm text-gray-400 flex items-center mt-1">
-                                            Prt: <span className="ml-1 text-gray-300 font-semibold">{m.priorityLevel || '-'}</span>
-                                        </div>
                                     </td>
                                     <td className="glass-table-td text-sm text-gray-400">{m.inputByName || '-'}</td>
                                     <td className="glass-table-td">
@@ -412,12 +454,34 @@ export const MustahiqList = () => {
                                     )}
                                 </tr>
                             ))}
-                            {mustahiq.length === 0 && (
-                                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Belum ada data Mustahiq.</td></tr>
+                            {paginatedMustahiq.length === 0 && (
+                                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Belum ada data Mustahiq yang sesuai pencarian.</td></tr>
                             )}
                         </tbody>
                     </table>
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex justify-center mt-6 space-x-2">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="btn-secondary disabled:opacity-50"
+                        >
+                            Sebelumnya
+                        </button>
+                        <span className="flex items-center text-sm text-slate-300 px-4">
+                            Halaman {currentPage} dari {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="btn-secondary disabled:opacity-50"
+                        >
+                            Selanjutnya
+                        </button>
+                    </div>
+                )}
             </div>
             {/* Modal removed as form is now inline */}
             {
