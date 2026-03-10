@@ -79,7 +79,7 @@ export const MustahiqList = () => {
                 phone: '',
                 address: prev.address,
                 asnafCategory: prev.asnafCategory,
-                gender: 'Laki-laki',
+                gender: prev.gender,
                 age: '',
                 priorityLevel: prev.priorityLevel,
                 zoneId: prev.zoneId
