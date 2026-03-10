@@ -47,7 +47,8 @@ router.get('/', authenticateToken, requireRole(['ADMIN', 'PEMBAGI', 'MUZAKKI']),
             .leftJoin(users, eq(mustahiq.inputBy, users.id))
             .leftJoin(zones, eq(mustahiq.zoneId, zones.id))
             .leftJoin(zakatKeluar, eq(mustahiq.id, zakatKeluar.mustahiqId))
-            .groupBy(mustahiq.id, users.id, zones.id);
+            .groupBy(mustahiq.id, users.id, zones.id)
+            .orderBy(desc(mustahiq.createdAt));
 
         res.json(allMustahiq);
     } catch (error) {
