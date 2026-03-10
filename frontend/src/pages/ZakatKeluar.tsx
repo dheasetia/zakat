@@ -13,7 +13,7 @@ export const ZakatKeluarList = () => {
     const [formData, setFormData] = useState({ mustahiqId: '', amount: '', category: 'Zakat Mal', distributionMethod: 'Cash', entrustedTo: '' });
     const [proofImage, setProofImage] = useState<File | null>(null);
 
-    const categoryOptions = ['Zakat Fitrah', 'Zakat Mal', 'Infaq', 'Sedekah'];
+    const categoryOptions = ['Zakat Mal'];
 
     const fetchData = async () => {
         try {
