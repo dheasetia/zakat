@@ -10,7 +10,7 @@ export const ZakatKeluarList = () => {
     const [showModal, setShowModal] = useState(false);
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [formData, setFormData] = useState({ mustahiqId: '', amount: '', category: 'Zakat Fitrah', distributionMethod: 'Cash', entrustedTo: '' });
+    const [formData, setFormData] = useState({ mustahiqId: '', amount: '', category: 'Zakat Mal', distributionMethod: 'Cash', entrustedTo: '' });
     const [proofImage, setProofImage] = useState<File | null>(null);
 
     const categoryOptions = ['Zakat Fitrah', 'Zakat Mal', 'Infaq', 'Sedekah'];
@@ -65,7 +65,7 @@ export const ZakatKeluarList = () => {
             });
 
             setShowModal(false);
-            setFormData({ mustahiqId: mustahiqOptions[0]?.id || '', amount: '', category: 'Zakat Fitrah', distributionMethod: 'Cash', entrustedTo: '' });
+            setFormData({ mustahiqId: mustahiqOptions[0]?.id || '', amount: '', category: 'Zakat Mal', distributionMethod: 'Cash', entrustedTo: '' });
             setProofImage(null);
             fetchData();
         } catch (error) {
