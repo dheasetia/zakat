@@ -19,6 +19,7 @@ export const MustahiqList = () => {
     });
     const [idCardImage, setIdCardImage] = useState<File | null>(null);
     const [profileImage, setProfileImage] = useState<File | null>(null);
+    const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
     const asnafOptions = ['Fakir', 'Miskin', 'Amil', 'Mualaf', 'Riqab', 'Gharim', 'Fisabilillah', 'Ibnu Sabil'];
 
@@ -80,17 +81,20 @@ export const MustahiqList = () => {
                 address: prev.address,
                 asnafCategory: prev.asnafCategory,
                 gender: prev.gender,
-                age: '',
+                age: prev.age,
                 priorityLevel: prev.priorityLevel,
                 zoneId: prev.zoneId
             }));
             setIdCardImage(null);
             setProfileImage(null);
             fetchMustahiqAndZones();
+            setNotification({ message: 'Data Mustahiq berhasil disimpan!', type: 'success' });
+            setTimeout(() => setNotification(null), 3000);
             setTimeout(() => nameInputRef.current?.focus(), 50);
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || 'Gagal menyimpan data Mustahiq';
-            alert(errorMsg);
+            setNotification({ message: errorMsg, type: 'error' });
+            setTimeout(() => setNotification(null), 3000);
             console.error(error);
         } finally {
             setSubmitting(false);
@@ -131,6 +135,12 @@ export const MustahiqList = () => {
 
     return (
         <>
+            {notification && (
+                <div className={`fixed top-4 right-4 z-50 p-4 rounded shadow-lg text-white font-medium transition-all ${notification.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
+                    }`}>
+                    {notification.message}
+                </div>
+            )}
             {(user?.role === 'ADMIN' || user?.role === 'PEMBAGI') && (
                 <div className="glass-card p-6 mb-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-slate-700/20 blur-2xl rounded-full"></div>
