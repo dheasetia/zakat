@@ -36,7 +36,7 @@ export const mustahiq = pgTable("mustahiq", {
     id: uuid("id").primaryKey().defaultRandom(),
     zoneId: integer("zone_id").references(() => zones.id), // Nullable for backwards compatibility
     name: varchar("name", { length: 255 }).notNull(),
-    nik: varchar("nik", { length: 50 }).notNull().unique(),
+    nik: varchar("nik", { length: 50 }).unique(),
     phone: varchar("phone", { length: 50 }),
     address: text("address"),
     gender: genderEnum("gender"),

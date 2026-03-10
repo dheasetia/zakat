@@ -129,7 +129,7 @@ router.post('/', authenticateToken, requireRole(['ADMIN', 'PEMBAGI']), upload.fi
 
         const newMustahiq = await db.insert(mustahiq).values({
             name,
-            nik,
+            nik: nik || null,
             phone,
             address,
             gender: gender || null,
@@ -175,7 +175,7 @@ router.put('/:id', authenticateToken, requireRole(['ADMIN', 'PEMBAGI']), upload.
         const profileImageUrl = files?.profileImage?.[0] ? `/uploads/${files.profileImage[0].filename}` : undefined;
 
         const updateData: any = {
-            name, nik, phone, address, asnafCategory,
+            name, nik: nik || null, phone, address, asnafCategory,
             gender: gender || null,
             age: age ? parseInt(age) : null,
             priorityLevel: priorityLevel ? parseInt(priorityLevel) : null,

@@ -159,9 +159,9 @@ export const MustahiqList = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="glass-label">NIK / Identitas</label>
+                                <label className="glass-label">NIK / Identitas (Opsional)</label>
                                 <input
-                                    type="text" required
+                                    type="text"
                                     className="glass-input"
                                     value={formData.nik} onChange={e => setFormData({ ...formData, nik: e.target.value })}
                                 />
