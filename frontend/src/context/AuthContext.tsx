@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import { setLogoutHandler } from '../utils/api';
 
 interface User {
     id: string;
@@ -19,24 +20,57 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/** Decode JWT payload tanpa library eksternal */
+const getTokenExpiry = (token: string): number | null => {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp ?? null; // dalam detik (Unix timestamp)
+    } catch {
+        return null;
+    }
+};
+
+const isTokenExpired = (token: string): boolean => {
+    const exp = getTokenExpiry(token);
+    if (!exp) return true;
+    return Date.now() / 1000 > exp; // bandingkan dengan waktu sekarang
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const logout = useCallback(() => {
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+    }, []);
+
+    // Daftarkan logout ke axios interceptor agar 401 otomatis trigger logout
     useEffect(() => {
-        // Check localStorage on load
+        setLogoutHandler(logout);
+    }, [logout]);
+
+    useEffect(() => {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
 
         if (storedToken && storedUser) {
-            setToken(storedToken);
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error("Failed to parse stored user", e);
-                localStorage.removeItem('user');
+            // Cek apakah token sudah expired saat app di-load
+            if (isTokenExpired(storedToken)) {
                 localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            } else {
+                setToken(storedToken);
+                try {
+                    setUser(JSON.parse(storedUser));
+                } catch (e) {
+                    console.error('Failed to parse stored user', e);
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                }
             }
         }
         setIsLoading(false);
@@ -47,13 +81,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(userData);
         localStorage.setItem('token', newToken);
         localStorage.setItem('user', JSON.stringify(userData));
-    };
-
-    const logout = () => {
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
     };
 
     return (
