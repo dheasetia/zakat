@@ -139,6 +139,7 @@ export const MustahiqList = () => {
             await api.post('/zakat-keluar', submitData, { headers: { 'Content-Type': 'multipart/form-data' } });
             setShowZakatModal(false);
             setZakatTarget(null);
+            fetchMustahiqAndZones();
             setNotification({ message: `Penyaluran zakat ke ${zakatTarget.name} berhasil dicatat!`, type: 'success' });
             setTimeout(() => setNotification(null), 3000);
         } catch (error: any) {
