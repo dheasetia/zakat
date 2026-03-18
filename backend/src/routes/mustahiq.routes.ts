@@ -140,6 +140,7 @@ router.post('/', authenticateToken, requireRole(['ADMIN', 'PEMBAGI']), upload.fi
             profileImageUrl,
             asnafCategory,
             zoneId: zoneId ? parseInt(zoneId) : null,
+            status: 'Layak',
             inputBy: req.user.userId
         }).returning();
         res.status(201).json(newMustahiq[0]);
