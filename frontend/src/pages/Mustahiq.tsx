@@ -111,7 +111,7 @@ export const MustahiqList = () => {
         e.stopPropagation();
         setEditingId(m.id);
         setFormData({
-            name: m.name, nik: m.nik, phone: m.phone || '', address: m.address || '',
+            name: m.name, nik: m.nik || '', phone: m.phone || '', address: m.address || '',
             asnafCategory: m.asnafCategory,
             gender: m.gender || 'Laki-laki', age: m.age ? m.age.toString() : '',
             priorityLevel: m.priorityLevel ? m.priorityLevel.toString() : '1',
