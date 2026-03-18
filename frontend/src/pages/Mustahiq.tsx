@@ -21,6 +21,13 @@ export const MustahiqList = () => {
     const [profileImage, setProfileImage] = useState<File | null>(null);
     const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
+    // Beri Zakat modal state
+    const [showZakatModal, setShowZakatModal] = useState(false);
+    const [zakatTarget, setZakatTarget] = useState<any>(null);
+    const [zakatFormData, setZakatFormData] = useState({ amount: '', category: 'Zakat Mal', distributionMethod: 'Cash', entrustedTo: '' });
+    const [zakatProofImage, setZakatProofImage] = useState<File | null>(null);
+    const [zakatSubmitting, setZakatSubmitting] = useState(false);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [filterZone, setFilterZone] = useState('');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -104,6 +111,42 @@ export const MustahiqList = () => {
             console.error(error);
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleOpenZakat = (e: React.MouseEvent, m: any) => {
+        e.stopPropagation();
+        setZakatTarget(m);
+        setZakatFormData({ amount: '', category: 'Zakat Mal', distributionMethod: 'Cash', entrustedTo: '' });
+        setZakatProofImage(null);
+        setShowZakatModal(true);
+    };
+
+    const handleSubmitZakat = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!zakatTarget) return;
+        setZakatSubmitting(true);
+        try {
+            const submitData = new FormData();
+            submitData.append('mustahiqId', zakatTarget.id);
+            submitData.append('amount', zakatFormData.amount);
+            submitData.append('category', zakatFormData.category);
+            submitData.append('distributionMethod', zakatFormData.distributionMethod);
+            if (zakatFormData.distributionMethod === 'Titip') {
+                submitData.append('entrustedTo', zakatFormData.entrustedTo);
+            }
+            if (zakatProofImage) submitData.append('proofImage', zakatProofImage);
+            await api.post('/zakat-keluar', submitData, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setShowZakatModal(false);
+            setZakatTarget(null);
+            setNotification({ message: `Penyaluran zakat ke ${zakatTarget.name} berhasil dicatat!`, type: 'success' });
+            setTimeout(() => setNotification(null), 3000);
+        } catch (error: any) {
+            const msg = error.response?.data?.message || 'Gagal mencatat penyaluran zakat';
+            setNotification({ message: msg, type: 'error' });
+            setTimeout(() => setNotification(null), 3000);
+        } finally {
+            setZakatSubmitting(false);
         }
     };
 
@@ -441,7 +484,16 @@ export const MustahiqList = () => {
                                                 >
                                                     <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                 </button>
-                                                {(user?.role === 'ADMIN') && (
+                                                {(user?.role === 'ADMIN' || user?.role === 'PEMBAGI') && (
+                                                    <button
+                                                        onClick={(e) => handleOpenZakat(e, m)}
+                                                        className="text-emerald-400 hover:text-emerald-300 transition-colors text-xs font-bold uppercase tracking-wider border border-emerald-800/50 rounded px-2 py-0.5 bg-emerald-900/20 hover:bg-emerald-900/40"
+                                                        title="Beri Zakat"
+                                                    >
+                                                        Beri Zakat
+                                                    </button>
+                                                )}
+                                                {user?.role === 'ADMIN' && (
                                                     <button
                                                         onClick={(e) => handleUpdateStatus(e, m.id, m.status)}
                                                         className="text-slate-400 hover:text-slate-300 ml-2 border-l border-white/10 pl-3 transition-colors text-xs uppercase tracking-wider font-bold"
@@ -483,22 +535,113 @@ export const MustahiqList = () => {
                     </div>
                 )}
             </div>
-            {/* Modal removed as form is now inline */}
-            {
-                previewImageUrl && (
-                    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4" onClick={() => setPreviewImageUrl(null)}>
-                        <div className="relative max-w-4xl w-full flex justify-center">
-                            <button
-                                className="absolute -top-10 right-0 text-white hover:text-gray-300 font-bold text-xl"
-                                onClick={() => setPreviewImageUrl(null)}
-                            >
-                                Tutup (X)
-                            </button>
-                            <img src={previewImageUrl || undefined} alt="Preview" className="max-h-[85vh] object-contain rounded shadow-lg bg-white" onClick={(e) => e.stopPropagation()} />
-                        </div>
+            {/* Beri Zakat Modal */}
+            {showZakatModal && zakatTarget && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 max-w-md w-full max-h-[calc(100vh-4rem)] overflow-y-auto shadow-2xl relative">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-900/20 blur-2xl rounded-full pointer-events-none"></div>
+                        <h3 className="text-xl font-bold mb-1 text-white relative z-10">Beri Zakat</h3>
+                        <p className="text-sm text-slate-400 mb-6 relative z-10">Penerima: <span className="text-emerald-400 font-semibold">{zakatTarget.name}</span></p>
+                        <form onSubmit={handleSubmitZakat} className="space-y-4 relative z-10">
+                            <div>
+                                <label className="glass-label">Kategori Zakat</label>
+                                <select
+                                    className="glass-input"
+                                    value={zakatFormData.category}
+                                    onChange={e => setZakatFormData({ ...zakatFormData, category: e.target.value })}
+                                >
+                                    <option value="Zakat Mal" className="bg-slate-900">Zakat Mal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="glass-label">Jumlah (Rp)</label>
+                                <input
+                                    type="number" required min="1000"
+                                    className="glass-input mb-1"
+                                    value={zakatFormData.amount}
+                                    onChange={e => setZakatFormData({ ...zakatFormData, amount: e.target.value })}
+                                />
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {[50000, 100000, 200000, 300000, 400000, 500000, 1000000, 2000000].map(amt => (
+                                        <button
+                                            key={amt}
+                                            type="button"
+                                            onClick={() => setZakatFormData({ ...zakatFormData, amount: amt.toString() })}
+                                            className="px-2 py-1 text-xs font-semibold rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors cursor-pointer"
+                                        >
+                                            {new Intl.NumberFormat('id-ID').format(amt)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="glass-label">Metode Penyaluran</label>
+                                    <select
+                                        className="glass-input"
+                                        value={zakatFormData.distributionMethod}
+                                        onChange={e => setZakatFormData({ ...zakatFormData, distributionMethod: e.target.value })}
+                                    >
+                                        <option value="Cash" className="bg-slate-900">Cash</option>
+                                        <option value="Transfer" className="bg-slate-900">Transfer</option>
+                                        <option value="Titip" className="bg-slate-900">Titip</option>
+                                    </select>
+                                </div>
+                                {zakatFormData.distributionMethod === 'Titip' && (
+                                    <div>
+                                        <label className="glass-label">Dititipkan Kepada</label>
+                                        <input
+                                            type="text" required
+                                            placeholder="Nama Penerima"
+                                            className="glass-input"
+                                            value={zakatFormData.entrustedTo}
+                                            onChange={e => setZakatFormData({ ...zakatFormData, entrustedTo: e.target.value })}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <label className="glass-label">Bukti Transfer (Opsional)</label>
+                                <input
+                                    type="file" accept="image/*"
+                                    className="mt-1 block w-full text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-white/10 file:text-slate-300 hover:file:bg-white/20"
+                                    onChange={e => { if (e.target.files?.[0]) setZakatProofImage(e.target.files[0]); }}
+                                />
+                            </div>
+                            <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-white/10">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowZakatModal(false); setZakatTarget(null); }}
+                                    className="btn-secondary"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit" disabled={zakatSubmitting || !zakatFormData.amount}
+                                    className="btn-primary disabled:opacity-50"
+                                >
+                                    {zakatSubmitting ? 'Menyimpan...' : 'Simpan Penyaluran'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                )
-            }
+                </div>
+            )}
+
+            {/* Image preview */}
+            {previewImageUrl && (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4" onClick={() => setPreviewImageUrl(null)}>
+                    <div className="relative max-w-4xl w-full flex justify-center">
+                        <button
+                            className="absolute -top-10 right-0 text-white hover:text-gray-300 font-bold text-xl"
+                            onClick={() => setPreviewImageUrl(null)}
+                        >
+                            Tutup (X)
+                        </button>
+                        <img src={previewImageUrl || undefined} alt="Preview" className="max-h-[85vh] object-contain rounded shadow-lg bg-white" onClick={(e) => e.stopPropagation()} />
+                    </div>
+                </div>
+            )}
         </>
     );
 };
