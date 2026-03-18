@@ -16,9 +16,25 @@ export const ZakatKeluarList = () => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    // Edit modal state
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingRecord, setEditingRecord] = useState<any>(null);
+    const [editFormData, setEditFormData] = useState({ mustahiqId: '', amount: '', category: 'Zakat Mal', distributionMethod: 'Cash', entrustedTo: '' });
+    const [editProofImage, setEditProofImage] = useState<File | null>(null);
+    const [editMustahiqSearch, setEditMustahiqSearch] = useState('');
+    const [editDropdownOpen, setEditDropdownOpen] = useState(false);
+    const editDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Toast notification
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const showToast = (msg: string) => {
+        setSuccessMessage(msg);
+        setTimeout(() => setSuccessMessage(null), 3000);
+    };
+
     const categoryOptions = ['Zakat Mal'];
 
-    // Close dropdown on outside click
+    // Close add-dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -27,6 +43,17 @@ export const ZakatKeluarList = () => {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Close edit-dropdown on outside click
+    useEffect(() => {
+        const handleClickOutsideEdit = (e: MouseEvent) => {
+            if (editDropdownRef.current && !editDropdownRef.current.contains(e.target as Node)) {
+                setEditDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutsideEdit);
+        return () => document.removeEventListener('mousedown', handleClickOutsideEdit);
     }, []);
 
     const fetchData = async () => {
@@ -82,6 +109,52 @@ export const ZakatKeluarList = () => {
             fetchData();
         } catch (error) {
             alert('Gagal menambahkan penyaluran zakat');
+            console.error(error);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleOpenEdit = (record: any) => {
+        setEditingRecord(record);
+        setEditFormData({
+            mustahiqId: record.mustahiqId,
+            amount: record.amount.toString(),
+            category: record.category,
+            distributionMethod: record.distributionMethod,
+            entrustedTo: record.entrustedTo || '',
+        });
+        setEditProofImage(null);
+        setEditMustahiqSearch('');
+        setEditDropdownOpen(false);
+        setShowEditModal(true);
+    };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingRecord) return;
+        setSubmitting(true);
+        try {
+            const submitData = new FormData();
+            submitData.append('mustahiqId', editFormData.mustahiqId);
+            submitData.append('amount', editFormData.amount);
+            submitData.append('category', editFormData.category);
+            submitData.append('distributionMethod', editFormData.distributionMethod);
+            if (editFormData.distributionMethod === 'Titip') {
+                submitData.append('entrustedTo', editFormData.entrustedTo);
+            }
+            if (editProofImage) {
+                submitData.append('proofImage', editProofImage);
+            }
+            await api.put(`/zakat-keluar/${editingRecord.id}`, submitData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            setShowEditModal(false);
+            setEditingRecord(null);
+            fetchData();
+            showToast('Data penyaluran zakat berhasil diperbarui!');
+        } catch (error) {
+            alert('Gagal memperbarui penyaluran zakat');
             console.error(error);
         } finally {
             setSubmitting(false);
@@ -184,13 +257,22 @@ export const ZakatKeluarList = () => {
                                         </td>
                                         {user?.role === 'ADMIN' && (
                                             <td className="glass-table-td text-right text-sm">
-                                                <button
-                                                    onClick={() => handleDelete(t.id)}
-                                                    className="text-red-400 hover:text-red-300 transition-colors"
-                                                    title="Hapus Transaksi"
-                                                >
-                                                    <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                </button>
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <button
+                                                        onClick={() => handleOpenEdit(t)}
+                                                        className="text-slate-400 hover:text-slate-200 transition-colors"
+                                                        title="Edit Transaksi"
+                                                    >
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(t.id)}
+                                                        className="text-red-400 hover:text-red-300 transition-colors"
+                                                        title="Hapus Transaksi"
+                                                    >
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                    </button>
+                                                </div>
                                             </td>
                                         )}
                                     </tr>
@@ -367,6 +449,167 @@ export const ZakatKeluarList = () => {
                     </div>
                 </div>
             )}
+            {/* Edit Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 max-w-md w-full max-h-[calc(100vh-4rem)] overflow-y-auto shadow-2xl relative">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-700/20 blur-2xl rounded-full pointer-events-none"></div>
+                        <h3 className="text-xl font-bold mb-6 text-white relative z-10">Edit Penyaluran Zakat</h3>
+                        <form onSubmit={handleUpdate} className="space-y-4 relative z-10">
+                            <div>
+                                <label className="glass-label">Penerima (Mustahiq)</label>
+                                <div className="relative" ref={editDropdownRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditDropdownOpen(prev => !prev)}
+                                        className="glass-input text-left flex items-center justify-between w-full"
+                                    >
+                                        <span className={editFormData.mustahiqId ? 'text-white' : 'text-slate-500'}>
+                                            {editFormData.mustahiqId
+                                                ? (() => { const m = mustahiqOptions.find((m: any) => m.id === editFormData.mustahiqId); return m ? `${m.name} (${m.asnafCategory})` : 'Pilih Mustahiq'; })()
+                                                : 'Pilih Mustahiq'}
+                                        </span>
+                                        <svg className={`w-4 h-4 text-slate-400 transition-transform duration-200 flex-shrink-0 ml-2 ${editDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    {editDropdownOpen && (
+                                        <div className="absolute z-50 mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 shadow-xl overflow-hidden">
+                                            <div className="p-2 border-b border-slate-700">
+                                                <div className="relative">
+                                                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                    </svg>
+                                                    <input
+                                                        type="text"
+                                                        autoFocus
+                                                        placeholder="Cari mustahiq..."
+                                                        value={editMustahiqSearch}
+                                                        onChange={e => setEditMustahiqSearch(e.target.value)}
+                                                        className="w-full pl-8 pr-3 py-2 text-sm rounded-md border border-slate-700 bg-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-slate-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <ul className="max-h-48 overflow-y-auto py-1">
+                                                {mustahiqOptions
+                                                    .filter((m: any) => m.name.toLowerCase().includes(editMustahiqSearch.toLowerCase()))
+                                                    .map((m: any) => (
+                                                        <li
+                                                            key={m.id}
+                                                            onClick={() => {
+                                                                setEditFormData({ ...editFormData, mustahiqId: m.id });
+                                                                setEditDropdownOpen(false);
+                                                                setEditMustahiqSearch('');
+                                                            }}
+                                                            className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between transition-colors ${
+                                                                editFormData.mustahiqId === m.id
+                                                                    ? 'bg-slate-700 text-white'
+                                                                    : 'text-slate-300 hover:bg-slate-800'
+                                                            }`}
+                                                        >
+                                                            <span>{m.name}</span>
+                                                            <span className="text-xs text-slate-500 ml-2 flex-shrink-0">{m.asnafCategory}</span>
+                                                        </li>
+                                                    ))
+                                                }
+                                                {mustahiqOptions.filter((m: any) => m.name.toLowerCase().includes(editMustahiqSearch.toLowerCase())).length === 0 && (
+                                                    <li className="px-3 py-3 text-sm text-slate-500 text-center">Tidak ditemukan</li>
+                                                )}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="glass-label">Kategori Zakat</label>
+                                <select
+                                    className="glass-input"
+                                    value={editFormData.category}
+                                    onChange={e => setEditFormData({ ...editFormData, category: e.target.value })}
+                                >
+                                    {['Zakat Mal'].map(opt => <option key={opt} value={opt} className="bg-slate-900">{opt}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="glass-label">Jumlah (Rp)</label>
+                                <input
+                                    type="number" required min="1000"
+                                    className="glass-input mb-1"
+                                    value={editFormData.amount}
+                                    onChange={e => setEditFormData({ ...editFormData, amount: e.target.value })}
+                                />
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {[50000, 100000, 200000, 500000, 1000000, 2000000].map(amount => (
+                                        <button
+                                            key={amount}
+                                            type="button"
+                                            onClick={() => setEditFormData({ ...editFormData, amount: amount.toString() })}
+                                            className="px-2 py-1 text-xs font-semibold rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors cursor-pointer"
+                                        >
+                                            {new Intl.NumberFormat('id-ID').format(amount)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="glass-label">Metode Penyaluran</label>
+                                    <select
+                                        className="glass-input"
+                                        value={editFormData.distributionMethod}
+                                        onChange={e => setEditFormData({ ...editFormData, distributionMethod: e.target.value })}
+                                    >
+                                        <option value="Cash" className="bg-slate-900">Cash</option>
+                                        <option value="Transfer" className="bg-slate-900">Transfer</option>
+                                        <option value="Titip" className="bg-slate-900">Titip</option>
+                                    </select>
+                                </div>
+                                {editFormData.distributionMethod === 'Titip' && (
+                                    <div>
+                                        <label className="glass-label">Dititipkan Kepada</label>
+                                        <input
+                                            type="text" required
+                                            placeholder="Nama Penerima"
+                                            className="glass-input"
+                                            value={editFormData.entrustedTo}
+                                            onChange={e => setEditFormData({ ...editFormData, entrustedTo: e.target.value })}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <label className="glass-label">Ganti Bukti Transfer (Opsional)</label>
+                                {editingRecord?.proofImageUrl && !editProofImage && (
+                                    <p className="text-xs text-slate-400 mt-1 mb-1">Bukti saat ini tersimpan. Upload baru untuk mengganti.</p>
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="mt-1 block w-full text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-white/10 file:text-slate-300 hover:file:bg-white/20"
+                                    onChange={e => { if (e.target.files?.[0]) setEditProofImage(e.target.files[0]); }}
+                                />
+                            </div>
+                            <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-white/10">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowEditModal(false); setEditingRecord(null); }}
+                                    className="btn-secondary"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit" disabled={submitting || !editFormData.mustahiqId}
+                                    className="btn-primary disabled:opacity-50"
+                                >
+                                    {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Image preview modal */}
             {previewImageUrl && (
                 <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={() => setPreviewImageUrl(null)}>
                     <div className="relative max-w-4xl w-full flex justify-center">
@@ -378,6 +621,16 @@ export const ZakatKeluarList = () => {
                         </button>
                         <img src={previewImageUrl || undefined} alt="Preview" className="max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/10" onClick={(e) => e.stopPropagation()} />
                     </div>
+                </div>
+            )}
+
+            {/* Success toast */}
+            {successMessage && (
+                <div className="fixed top-6 right-6 z-[70] flex items-center gap-3 bg-slate-800 border border-slate-600 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-2xl animate-pulse">
+                    <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {successMessage}
                 </div>
             )}
         </>

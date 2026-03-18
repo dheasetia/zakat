@@ -70,6 +70,39 @@ router.post('/', authenticateToken, requireRole(['ADMIN', 'PEMBAGI']), upload.si
     }
 });
 
+// Update Zakat Keluar (Admin Only)
+router.put('/:id', authenticateToken, requireRole(['ADMIN']), upload.single('proofImage'), async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const id = req.params.id as string;
+        const { mustahiqId, amount, category, distributionMethod, entrustedTo } = req.body;
+
+        // Check record exists
+        const existing = await db.select().from(zakatKeluar).where(eq(zakatKeluar.id, id));
+        if (existing.length === 0) {
+            res.status(404).json({ message: 'Data tidak ditemukan.' });
+            return;
+        }
+
+        const proofImageUrl = req.file
+            ? `/uploads/${req.file.filename}`
+            : existing[0].proofImageUrl; // keep old image if none uploaded
+
+        const updated = await db.update(zakatKeluar).set({
+            mustahiqId,
+            amount: amount.toString(),
+            category,
+            distributionMethod: distributionMethod || 'Cash',
+            entrustedTo: entrustedTo || null,
+            proofImageUrl,
+        }).where(eq(zakatKeluar.id, id)).returning();
+
+        res.json(updated[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Gagal memperbarui data Penyaluran Zakat.' });
+    }
+});
+
 // Delete Zakat Keluar (Admin Only)
 router.delete('/:id', authenticateToken, requireRole(['ADMIN']), async (req: AuthRequest, res: Response) => {
     try {
