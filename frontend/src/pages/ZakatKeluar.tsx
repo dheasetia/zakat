@@ -381,7 +381,7 @@ export const ZakatKeluarList = () => {
                                     value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value })}
                                 />
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                    {[50000, 100000, 200000, 500000, 1000000, 2000000].map(amount => (
+                                    {[50000, 100000, 200000, 300000, 400000, 500000, 1000000, 2000000].map(amount => (
                                         <button
                                             key={amount}
                                             type="button"
@@ -539,7 +539,7 @@ export const ZakatKeluarList = () => {
                                     onChange={e => setEditFormData({ ...editFormData, amount: e.target.value })}
                                 />
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                    {[50000, 100000, 200000, 500000, 1000000, 2000000].map(amount => (
+                                    {[50000, 100000, 200000, 300000, 400000, 500000, 1000000, 2000000].map(amount => (
                                         <button
                                             key={amount}
                                             type="button"
