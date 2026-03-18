@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,8 +12,22 @@ export const ZakatKeluarList = () => {
     const [submitting, setSubmitting] = useState(false);
     const [formData, setFormData] = useState({ mustahiqId: '', amount: '', category: 'Zakat Mal', distributionMethod: 'Cash', entrustedTo: '' });
     const [proofImage, setProofImage] = useState<File | null>(null);
+    const [mustahiqSearch, setMustahiqSearch] = useState('');
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const categoryOptions = ['Zakat Mal'];
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const fetchData = async () => {
         try {
@@ -23,13 +37,11 @@ export const ZakatKeluarList = () => {
             ]);
             setTransaksi(trxRes.data);
 
-            // Filter only "Layak" mustahiq for dropdown
-            const layakMustahiq = musRes.data.filter((m: any) => m.status === 'Layak');
+            // Filter only "Layak" mustahiq for dropdown, sorted alphabetically
+            const layakMustahiq = musRes.data
+                .filter((m: any) => m.status === 'Layak')
+                .sort((a: any, b: any) => a.name.localeCompare(b.name, 'id'));
             setMustahiqOptions(layakMustahiq);
-
-            if (layakMustahiq.length > 0) {
-                setFormData(prev => ({ ...prev, mustahiqId: layakMustahiq[0].id }));
-            }
         } catch (error) {
             console.error("Error fetching data", error);
         } finally {
@@ -200,14 +212,72 @@ export const ZakatKeluarList = () => {
                         <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
                             <div>
                                 <label className="glass-label">Penerima (Mustahiq)</label>
-                                <select
-                                    required
-                                    className="glass-input"
-                                    value={formData.mustahiqId} onChange={e => setFormData({ ...formData, mustahiqId: e.target.value })}
-                                >
-                                    <option value="" disabled className="bg-slate-900">Pilih Mustahiq</option>
-                                    {mustahiqOptions.map(m => <option key={m.id} value={m.id} className="bg-slate-900">{m.name} ({m.asnafCategory})</option>)}
-                                </select>
+                                <div className="relative" ref={dropdownRef}>
+                                    {/* Trigger button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setDropdownOpen(prev => !prev)}
+                                        className="glass-input text-left flex items-center justify-between w-full"
+                                    >
+                                        <span className={formData.mustahiqId ? 'text-white' : 'text-slate-500'}>
+                                            {formData.mustahiqId
+                                                ? (() => { const m = mustahiqOptions.find((m: any) => m.id === formData.mustahiqId); return m ? `${m.name} (${m.asnafCategory})` : 'Pilih Mustahiq'; })()
+                                                : 'Pilih Mustahiq'}
+                                        </span>
+                                        <svg className={`w-4 h-4 text-slate-400 transition-transform duration-200 flex-shrink-0 ml-2 ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    {/* Dropdown panel */}
+                                    {dropdownOpen && (
+                                        <div className="absolute z-50 mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 shadow-xl overflow-hidden">
+                                            {/* Search input */}
+                                            <div className="p-2 border-b border-slate-700">
+                                                <div className="relative">
+                                                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                    </svg>
+                                                    <input
+                                                        type="text"
+                                                        autoFocus
+                                                        placeholder="Cari mustahiq..."
+                                                        value={mustahiqSearch}
+                                                        onChange={e => setMustahiqSearch(e.target.value)}
+                                                        className="w-full pl-8 pr-3 py-2 text-sm rounded-md border border-slate-700 bg-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-slate-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                            {/* Options list */}
+                                            <ul className="max-h-48 overflow-y-auto py-1">
+                                                {mustahiqOptions
+                                                    .filter((m: any) => m.name.toLowerCase().includes(mustahiqSearch.toLowerCase()))
+                                                    .map((m: any) => (
+                                                        <li
+                                                            key={m.id}
+                                                            onClick={() => {
+                                                                setFormData({ ...formData, mustahiqId: m.id });
+                                                                setDropdownOpen(false);
+                                                                setMustahiqSearch('');
+                                                            }}
+                                                            className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between transition-colors ${
+                                                                formData.mustahiqId === m.id
+                                                                    ? 'bg-slate-700 text-white'
+                                                                    : 'text-slate-300 hover:bg-slate-800'
+                                                            }`}
+                                                        >
+                                                            <span>{m.name}</span>
+                                                            <span className="text-xs text-slate-500 ml-2 flex-shrink-0">{m.asnafCategory}</span>
+                                                        </li>
+                                                    ))
+                                                }
+                                                {mustahiqOptions.filter((m: any) => m.name.toLowerCase().includes(mustahiqSearch.toLowerCase())).length === 0 && (
+                                                    <li className="px-3 py-3 text-sm text-slate-500 text-center">Tidak ditemukan</li>
+                                                )}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
                                 {mustahiqOptions.length === 0 && (
                                     <p className="text-xs text-red-400 mt-1">Tidak ada Mustahiq dengan status 'Layak'.</p>
                                 )}
